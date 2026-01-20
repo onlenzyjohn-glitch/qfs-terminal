@@ -2,23 +2,70 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>Quantum Terminal</title>
+<title>Quantum Finance Portal</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+
 <style>
-body{background:#010205;color:#00ffd9;font-family:monospace;margin:0}
+body{
+  margin:0;
+  font-family:Arial, monospace;
+  background:#02040a;
+  color:#e0fff8;
+}
+
+.hero{
+  background:url('https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&w=1200&q=60');
+  background-size:cover;
+  background-position:center;
+  padding:60px 20px;
+  text-align:center;
+}
+
+.hero h1{margin:0;font-size:26px;text-shadow:0 0 10px #00ffd9}
+.hero p{font-size:14px;max-width:600px;margin:10px auto}
+
 .wrap{max-width:560px;margin:10px auto}
-.box{background:#03060c;border:1px solid #00ffd9;border-radius:14px;padding:12px;margin:6px;box-shadow:0 0 8px #003d36}
-input,button{width:100%;padding:10px;margin:6px 0;border-radius:10px;border:1px solid #00ffd9;background:#000;color:#00ffd9}
+.box{
+  background:#03060c;
+  border:1px solid #00ffd9;
+  border-radius:14px;
+  padding:12px;
+  margin:6px;
+}
+
+input,button{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border-radius:10px;
+  border:1px solid #00ffd9;
+  background:#000;
+  color:#00ffd9
+}
+
 button{background:#00221f}
 .hidden{display:none}
 .row{display:flex;justify-content:space-between}
 .log{font-size:12px}
 .glow{text-shadow:0 0 6px #00ffd9}
+.tag{font-size:11px;opacity:.8}
 </style>
 </head>
+
 <body>
+
+<div class="hero">
+<h1>Quantum Financial System</h1>
+<p>
+Next‑generation digital ledger environment designed for simulated asset
+management, internal transfers, and secure demonstration of quantum‑style
+account infrastructure. This portal is a closed ecosystem and does not
+connect to external banks.
+</p>
+</div>
+
 <div class="wrap box">
-<div class="glow">QUANTUM FINANCIAL TERMINAL</div>
+<div class="glow">SECURE BROKER TERMINAL</div>
 <div id="node">NODE: initializing...</div>
 
 <div id="login">
@@ -30,25 +77,29 @@ button{background:#00221f}
 </div>
 
 <div id="app" class="hidden">
+
+<div class="box">
 <div class="row">
  <div id="who"></div>
  <div class="glow"><span id="bal"></span> QC</div>
 </div>
-<div>ACCOUNT: <span id="acc"></span></div>
+<div class="tag">ACCOUNT: <span id="acc"></span></div>
+<div class="tag">Account Type: Simulated Broker</div>
+</div>
 
 <div class="box">
 <input id="to" placeholder="target account"/>
 <input id="amt" type="number" placeholder="amount"/>
 <input id="code" placeholder="2FA 0000"/>
-<button onclick="send()">TRANSFER</button>
+<button onclick="send()">EXECUTE TRANSFER</button>
 </div>
 
 <div class="box">
-LEDGER
+LEDGER HISTORY
 <div id="history"></div>
 </div>
 
-<button onclick="logout()">EXIT</button>
+<button onclick="logout()">LOGOUT</button>
 </div>
 </div>
 
@@ -56,14 +107,14 @@ LEDGER
 
 <script>
 function hash(){return 'H'+Math.random().toString(36).slice(2,12).toUpperCase()}
-function db(){return JSON.parse(localStorage.getItem('qt')||'{"u":{}}')}
-function save(d){localStorage.setItem('qt',JSON.stringify(d))}
+function db(){return JSON.parse(localStorage.getItem('qt2')||'{"u":{}}')}
+function save(d){localStorage.setItem('qt2',JSON.stringify(d))}
 function id(){return 'Q'+Math.floor(Math.random()*900000+100000)}
 
 function node(){
- let s=['syncing nodes','checking ledger','quantum lock','connected'],i=0
+ let s=['syncing nodes','broker channel','quantum lock','connected'],i=0
  let n=document.getElementById('node')
- let t=setInterval(()=>{n.innerText='NODE: '+s[i];i++;if(i>=s.length)clearInterval(t)},600)
+ let t=setInterval(()=>{n.innerText='NODE: '+s[i];i++;if(i>=s.length)clearInterval(t)},700)
 }
 node()
 
@@ -71,8 +122,8 @@ function register(){
  let d=db(),e=email.value.trim(),p=pass.value,pi=pin.value
  if(!e||!p||pi.length!=4)return alert('email, password and 4 digit pin required')
  if(d.u[e])return alert('exists')
- d.u[e]={pass:p,pin:pi,acc:id(),balance:8000,tx:[]}
- save(d);alert('account ready')
+ d.u[e]={pass:p,pin:pi,acc:id(),balance:10000,tx:[]}
+ save(d);alert('broker account created')
 }
 
 function login(){
@@ -91,7 +142,7 @@ function load(){
 
 function render(){
  let d=db(),me=localStorage.getItem('me'),u=d.u[me]
- who.innerText='USER: '+me
+ who.innerText='CLIENT: '+me
  acc.innerText=u.acc
  bal.innerText=u.balance
  history.innerHTML=''
@@ -121,5 +172,6 @@ function send(){
 function logout(){localStorage.removeItem('me');location.reload()}
 load()
 </script>
+
 </body>
 </html>
