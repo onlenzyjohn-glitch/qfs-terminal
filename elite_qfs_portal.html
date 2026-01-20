@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Elite QFS Portal</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+<style>
+body{margin:0;background:#02060b;color:#e6fffa;font-family:Arial}
+.topbar{display:flex;align-items:center;padding:10px;background:#001a17}
+.logo{height:40px}
+.hero{background:#021015;padding:40px 20px;text-align:center}
+.wrap{max-width:720px;margin:10px auto}
+
+.card{background:#03080f;border:1px solid #00ffd9;border-radius:14px;padding:12px;margin:8px}
+input,button,textarea{width:100%;padding:10px;margin:6px 0;border-radius:10px;border:1px solid #00ffd9;background:#000;color:#00ffd9}
+button{background:#00241f;font-weight:bold}
+
+.row{display:flex;justify-content:space-between;align-items:center}
+.hidden{display:none}
+.log{font-size:12px}
+.badge{font-size:11px;opacity:.85}
+.toast{position:fixed;bottom:10px;right:10px;background:#001e1a;padding:8px;border:1px solid #00ffd9;border-radius:8px}
+
+.nav{display:flex;gap:6px}
+.nav button{flex:1}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+<img class="logo" id="brandLogo" src="https://dummyimage.com/200x60/00221f/00ffd9&text=MY+LOGO"/>
+</div>
+
+<div class="hero">
+<h1>Elite QFS Account</h1>
+<p>Secure portfolio terminal with client management, support desk and notifications.</p>
+</div>
+
+<div class="wrap">
+
+<div class="card" id="loginBox">
+<input id="email" placeholder="email"/>
+<input id="pass" type="password" placeholder="password"/>
+<input id="pin" type="password" placeholder="4 digit pin"/>
+<button onclick="register()">CREATE ACCOUNT</button>
+<button onclick="login()">LOGIN</button>
+</div>
+
+<div id="app" class="hidden">
+
+<div class="nav">
+<button onclick="show('dash')">Dashboard</button>
+<button onclick="show('profile')">Profile/KYC</button>
+<button onclick="show('support')">Support</button>
+<button onclick="show('inbox')">Inbox</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dash" class="section">
+
+<div class="card">
+<div class="row">
+ <div id="who"></div>
+ <div><b id="bal"></b> QC</div>
+</div>
+<div class="badge">Account: <span id="acc"></span></div>
+<div class="badge">Tier: <span id="tier"></span></div>
+<div class="badge">Last login: <span id="last"></span></div>
+</div>
+
+<div class="card">
+<h4>Moving Portfolio</h4>
+<div class="row"><span>Assets</span><span id="p1"></span></div>
+<div class="row"><span>Today</span><span id="p2"></span></div>
+<div class="row"><span>Risk</span><span id="p3"></span></div>
+</div>
+
+<div class="card">
+<input id="to" placeholder="target account"/>
+<input id="amt" type="number" placeholder="amount"/>
+<input id="code" placeholder="2FA 0000"/>
+<button onclick="send()">SEND FUNDS</button>
+</div>
+
+<div class="card">
+<h4>Ledger</h4>
+<div id="history"></div>
+</div>
+
+<div class="card">
+<h4>User Comments</h4>
+<div class="log">“Best interface I’ve used.” – Clara</div>
+<div class="log">“Feels like a real broker desk.” – Andre</div>
+<div class="log">“Admin helped me instantly.” – Mei</div>
+</div>
+
+<div class="card" id="admin">
+<h4>ADMIN PANEL</h4>
+<input id="akey" placeholder="admin key"/>
+<input id="target" placeholder="account"/>
+<input id="credit" type="number" placeholder="credit amount"/>
+<button onclick="creditUser()">CREDIT ACCOUNT</button>
+<button onclick="freeze()">FREEZE / UNFREEZE</button>
+</div>
+
+</div>
+
+<!-- PROFILE -->
+<div id="profile" class="section hidden">
+<div class="card">
+<h4>Client Profile & KYC</h4>
+<input id="fullname" placeholder="full name"/>
+<input id="phone" placeholder="phone"/>
+<textarea id="address" placeholder="address"></textarea>
+<button onclick="saveProfile()">SAVE PROFILE</button>
+</div>
+</div>
+
+<!-- SUPPORT -->
+<div id="support" class="section hidden">
+<div class="card">
+<h4>Support Ticket</h4>
+<input id="subj" placeholder="subject"/>
+<textarea id="msg" placeholder="describe issue"></textarea>
+<button onclick="ticket()">SUBMIT TICKET</button>
+<div id="tickets" class="log"></div>
+</div>
+</div>
+
+<!-- INBOX -->
+<div id="inbox" class="section hidden">
+<div class="card">
+<h4>Notifications</h4>
+<div id="notes" class="log"></div>
+</div>
+</div>
+
+<button onclick="logout()">LOGOUT</button>
+
+</div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const ADMIN_KEY='ELITE900';
+
+function msg(t){toast.innerText=t;toast.classList.remove('hidden');setTimeout(()=>toast.classList.add('hidden'),2000)}
+
+function db(){return JSON.parse(localStorage.getItem('eliteX')||'{"u":{},"tickets":[],"notes":[]}')}
+function save(d){localStorage.setItem('eliteX',JSON.stringify(d))}
+function id(){return 'Q'+Math.floor(Math.random()*900000+100000)}
+function hash(){return 'H'+Math.random().toString(36).slice(2,12).toUpperCase()}
+function tier(b){return b>20000?'PRIME':b>12000?'GOLD':'BASIC'}
+
+function register(){
+ let d=db(),e=email.value.trim(),p=pass.value,pi=pin.value
+ if(!e||!p||pi.length!=4)return msg('email, password, 4 pin required')
+ if(d.u[e])return msg('exists')
+ d.u[e]={pass:p,pin:pi,acc:id(),balance:10000,tx:[],freeze:false,last:new Date().toLocaleString(),profile:{}}
+ save(d);msg('account created')
+}
+
+function login(){
+ let d=db(),e=email.value.trim(),p=pass.value,pi=pin.value
+ let u=d.u[e]
+ if(!u||u.pass!=p||u.pin!=pi)return msg('denied')
+ if(u.freeze)return msg('account frozen')
+ localStorage.setItem('me',e);u.last=new Date().toLocaleString();save(d);load()
+}
+
+function load(){let me=localStorage.getItem('me');if(!me)return
+ loginBox.classList.add('hidden');app.classList.remove('hidden');render();show('dash');loop();}
+
+function show(id){document.querySelectorAll('.section').forEach(s=>s.classList.add('hidden'));document.getElementById(id).classList.remove('hidden')}
+
+function render(){
+ let d=db(),me=localStorage.getItem('me'),u=d.u[me]
+ who.innerText='CLIENT: '+me
+ acc.innerText=u.acc
+ bal.innerText=u.balance
+ tier.innerText=tier(u.balance)
+ last.innerText=u.last
+
+ p1.innerText=(u.balance*(0.6+Math.random()*0.1)).toFixed(2)
+ p2.innerText=(Math.random()*4).toFixed(2)+'%'
+ p3.innerText=['Low','Medium','High'][Math.floor(Math.random()*3)]
+
+ history.innerHTML=''
+ u.tx.slice().reverse().forEach(t=>{history.innerHTML+=`<div class='log row'><span>${t.m}<br/><small>${t.h}</small></span><span>${t.a}</span></div>`})
+
+ notes.innerHTML=''
+ d.notes.forEach(n=>notes.innerHTML+=`<div>- ${n}</div>`)
+
+ tickets.innerHTML=''
+ d.tickets.forEach(t=>tickets.innerHTML+=`<div>- ${t}</div>`)
+}
+
+function loop(){setInterval(render,4000)}
+
+function find(a){let d=db();return Object.values(d.u).find(x=>x.acc==a)}
+
+function send(){
+ let d=db(),me=localStorage.getItem('me'),u=d.u[me]
+ let r=find(to.value),am=parseInt(amt.value)
+ if(code.value!='0000')return msg('2fa error')
+ if(!r)return msg('not found')
+ if(am<=0||u.balance<am)return msg('invalid')
+
+ let h=hash()
+ u.balance-=am;r.balance+=am
+ u.tx.push({m:'OUT '+to.value,a:'-'+am,h:h})
+ r.tx.push({m:'IN '+u.acc,a:'+'+am,h:h})
+
+ d.notes.push('Transfer '+am+' to '+to.value)
+ save(d);render();msg('sent')
+}
+
+function creditUser(){
+ let d=db();if(akey.value!=ADMIN_KEY)return msg('no access')
+ let r=find(target.value);if(!r)return msg('not found')
+ r.balance+=parseInt(credit.value||0)
+ r.tx.push({m:'ADMIN CREDIT',a:'+'+credit.value,h:hash()})
+ d.notes.push('Admin credited '+target.value)
+ save(d);msg('credited')
+}
+
+function freeze(){
+ let d=db();if(akey.value!=ADMIN_KEY)return msg('no access')
+ let r=find(target.value);if(!r)return msg('not found')
+ r.freeze=!r.freeze;save(d);msg('freeze toggled')
+}
+
+function saveProfile(){
+ let d=db(),me=localStorage.getItem('me')
+ d.u[me].profile={name:fullname.value,phone:phone.value,address:address.value}
+ save(d);msg('profile saved')
+}
+
+function ticket(){
+ let d=db();d.tickets.push(subj.value+': '+msg.value);save(d);render();msg('ticket sent')
+}
+
+function logout(){localStorage.removeItem('me');location.reload()}
+
+load();
+</script>
+</body>
+</html>
