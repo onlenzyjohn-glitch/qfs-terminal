@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Elite QFS Portfolio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+<style>
+body{margin:0;background:#02050a;color:#e8fffa;font-family:Arial,monospace}
+.hero{background:url('https://images.unsplash.com/photo-1611078489935-0cb964de46d6?auto=format&fit=crop&w=1200&q=60');
+background-size:cover;background-position:center;padding:60px 20px;text-align:center}
+.hero h1{text-shadow:0 0 10px #00ffd9}
+.wrap{max-width:600px;margin:10px auto}
+.card{background:#03070d;border:1px solid #00ffd9;border-radius:14px;padding:12px;margin:8px}
+input,button{width:100%;padding:10px;margin:6px 0;border-radius:10px;border:1px solid #00ffd9;background:#000;color:#00ffd9}
+button{background:#00221f}
+.row{display:flex;justify-content:space-between;align-items:center}
+.hidden{display:none}
+.log{font-size:12px}
+.badge{font-size:11px;opacity:.8}
+.toast{position:fixed;bottom:10px;right:10px;background:#001b18;padding:8px;border:1px solid #00ffd9;border-radius:8px}
+</style>
+</head>
+
+<body>
+<div class="hero">
+<h1>Elite Quantum Portfolio</h1>
+<p>Demonstration broker environment for internal ledger transfers and portfolio simulation.
+Closed ecosystem – no connection to external banks.</p>
+</div>
+
+<div class="wrap">
+<div class="card" id="loginBox">
+<input id="email" placeholder="email"/>
+<input id="pass" type="password" placeholder="password"/>
+<input id="pin" type="password" placeholder="4 digit pin"/>
+<button onclick="register()">CREATE ACCOUNT</button>
+<button onclick="login()">LOGIN</button>
+</div>
+
+<div id="app" class="hidden">
+
+<div class="card">
+<div class="row">
+ <div id="who"></div>
+ <div><b id="bal"></b> QC</div>
+</div>
+<div class="badge">Account: <span id="acc"></span></div>
+<div class="badge">Tier: <span id="tier"></span></div>
+<div class="badge">Last login: <span id="last"></span></div>
+</div>
+
+<div class="card">
+<h4>Portfolio (simulated)</h4>
+<div class="row"><span>Digital Assets</span><span id="p1"></span></div>
+<div class="row"><span>Growth Today</span><span id="p2"></span></div>
+<div class="row"><span>Risk Score</span><span id="p3"></span></div>
+</div>
+
+<div class="card">
+<input id="to" placeholder="target account"/>
+<input id="amt" type="number" placeholder="amount"/>
+<input id="code" placeholder="2FA 0000"/>
+<button onclick="send()">TRANSFER</button>
+</div>
+
+<div class="card">
+<h4>Ledger</h4>
+<div id="history"></div>
+</div>
+
+<div class="card">
+<h4>User Feedback</h4>
+<div class="log">“Interface feels institutional and clean.” – Alex</div>
+<div class="log">“Fast internal transfers with clear hashes.” – Morgan</div>
+<div class="log">“Portfolio panel helps visualize balance.” – Priya</div>
+</div>
+
+<div class="card" id="admin">
+<h4>ADMIN</h4>
+<input id="akey" placeholder="admin key"/>
+<input id="target" placeholder="account"/>
+<input id="credit" type="number" placeholder="credit"/>
+<button onclick="creditUser()">CREDIT USER</button>
+<button onclick="freeze()">FREEZE ACCOUNT</button>
+</div>
+
+<button onclick="logout()">LOGOUT</button>
+</div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<audio id="beep" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAA"></audio>
+
+<script>
+const ADMIN_KEY='ELITE900';
+function msg(t){toast.innerText=t;toast.classList.remove('hidden');setTimeout(()=>toast.classList.add('hidden'),2000)}
+function hash(){return 'H'+Math.random().toString(36).slice(2,12).toUpperCase()}
+function db(){return JSON.parse(localStorage.getItem('elite')||'{"u":{}}')}
+function save(d){localStorage.setItem('elite',JSON.stringify(d))}
+function id(){return 'Q'+Math.floor(Math.random()*900000+100000)}
+function tier(b){return b>20000?'PRIME':b>12000?'GOLD':'BASIC'}
+
+function register(){
+ let d=db(),e=email.value.trim(),p=pass.value,pi=pin.value
+ if(!e||!p||pi.length!=4)return msg('email, password, 4 pin required')
+ if(d.u[e])return msg('exists')
+ d.u[e]={pass:p,pin:pi,acc:id(),balance:10000,tx:[],freeze:false,last:new Date().toLocaleString()}
+ save(d);msg('account created')
+}
+
+function login(){
+ let d=db(),e=email.value.trim(),p=pass.value,pi=pin.value
+ let u=d.u[e]
+ if(!u||u.pass!=p||u.pin!=pi)return msg('denied')
+ if(u.freeze)return msg('account frozen')
+ localStorage.setItem('me',e);u.last=new Date().toLocaleString();save(d);load()
+}
+
+function load(){
+ let me=localStorage.getItem('me');if(!me)return
+ loginBox.classList.add('hidden');app.classList.remove('hidden')
+ render()
+}
+
+function render(){
+ let d=db(),me=localStorage.getItem('me'),u=d.u[me]
+ who.innerText='CLIENT: '+me
+ acc.innerText=u.acc
+ bal.innerText=u.balance
+ tier.innerText=tier(u.balance)
+ last.innerText=u.last
+
+ p1.innerText=(u.balance*0.6).toFixed(2)
+ p2.innerText=(Math.random()*3).toFixed(2)+'%'
+ p3.innerText=['Low','Med','High'][Math.floor(Math.random()*3)]
+
+ history.innerHTML=''
+ u.tx.slice().reverse().forEach(t=>{
+  history.innerHTML+=`<div class='log row'><span>${t.m}<br/><small>${t.h}</small></span><span>${t.a}</span></div>`
+ })
+}
+
+function find(a){let d=db();return Object.values(d.u).find(x=>x.acc==a)}
+
+function sound(){beep.play().catch(()=>{})}
+
+function send(){
+ let d=db(),me=localStorage.getItem('me'),u=d.u[me]
+ let r=find(to.value),am=parseInt(amt.value)
+ if(code.value!='0000')return msg('2fa error')
+ if(!r)return msg('not found')
+ if(am<=0||u.balance<am)return msg('invalid')
+
+ let h=hash()
+ u.balance-=am;r.balance+=am
+ u.tx.push({m:'OUT '+to.value,a:'-'+am,h:h})
+ r.tx.push({m:'IN '+u.acc,a:'+'+am,h:h})
+ save(d);sound();render();msg('sent')
+}
+
+function creditUser(){
+ let d=db()
+ if(akey.value!=ADMIN_KEY)return msg('no access')
+ let r=find(target.value);if(!r)return msg('not found')
+ r.balance+=parseInt(credit.value||0)
+ r.tx.push({m:'ADMIN CREDIT',a:'+'+credit.value,h:hash()})
+ save(d);msg('credited')
+}
+
+function freeze(){
+ let d=db()
+ if(akey.value!=ADMIN_KEY)return msg('no access')
+ let r=find(target.value);if(!r)return msg('not found')
+ r.freeze=!r.freeze;save(d);msg('toggled freeze')
+}
+
+function logout(){localStorage.removeItem('me');location.reload()}
+load()
+</script>
+</body>
+</html>
