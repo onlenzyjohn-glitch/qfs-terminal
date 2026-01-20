@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8" />
-<title>QFS Quantum Terminal</title>
+<meta charset="utf-8"/>
+<title>Quantum Terminal</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
 body{background:#010205;color:#00ffd9;font-family:monospace;margin:0}
-.container{max-width:540px;margin:10px auto}
-.term{background:#03060c;border:1px solid #00ffd9;border-radius:14px;padding:12px;margin:6px;box-shadow:0 0 10px #003d36}
+.wrap{max-width:560px;margin:10px auto}
+.box{background:#03060c;border:1px solid #00ffd9;border-radius:14px;padding:12px;margin:6px;box-shadow:0 0 8px #003d36}
 input,button{width:100%;padding:10px;margin:6px 0;border-radius:10px;border:1px solid #00ffd9;background:#000;color:#00ffd9}
 button{background:#00221f}
 .hidden{display:none}
@@ -16,34 +17,34 @@ button{background:#00221f}
 </style>
 </head>
 <body>
-<div class="container term">
+<div class="wrap box">
 <div class="glow">QUANTUM FINANCIAL TERMINAL</div>
-<div id="node">NODE: awaiting verification...</div>
+<div id="node">NODE: initializing...</div>
 
-<div id="loginBox">
-<input id="email" placeholder="email" />
-<input id="pass" type="password" placeholder="password" />
-<input id="pin" type="password" placeholder="4 digit pin" />
+<div id="login">
+<input id="email" placeholder="email"/>
+<input id="pass" type="password" placeholder="password"/>
+<input id="pin" type="password" placeholder="4 digit pin"/>
 <button onclick="register()">CREATE ACCOUNT</button>
 <button onclick="login()">LOGIN</button>
 </div>
 
 <div id="app" class="hidden">
 <div class="row">
- <div id="welcome"></div>
+ <div id="who"></div>
  <div class="glow"><span id="bal"></span> QC</div>
 </div>
 <div>ACCOUNT: <span id="acc"></span></div>
 
-<div class="term">
-<input id="to" placeholder="target account" />
-<input id="amt" type="number" placeholder="amount" />
-<input id="code" placeholder="2FA 0000" />
+<div class="box">
+<input id="to" placeholder="target account"/>
+<input id="amt" type="number" placeholder="amount"/>
+<input id="code" placeholder="2FA 0000"/>
 <button onclick="send()">TRANSFER</button>
 </div>
 
-<div class="term">
-LEDGER STREAM
+<div class="box">
+LEDGER
 <div id="history"></div>
 </div>
 
@@ -54,29 +55,28 @@ LEDGER STREAM
 <audio id="beep" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAA"></audio>
 
 <script>
-function hash(){return 'H'+Math.random().toString(36).substr(2,10).toUpperCase()}
-function db(){return JSON.parse(localStorage.getItem('qterm')||'{"u":{}}')}
-function save(d){localStorage.setItem('qterm',JSON.stringify(d))}
+function hash(){return 'H'+Math.random().toString(36).slice(2,12).toUpperCase()}
+function db(){return JSON.parse(localStorage.getItem('qt')||'{"u":{}}')}
+function save(d){localStorage.setItem('qt',JSON.stringify(d))}
 function id(){return 'Q'+Math.floor(Math.random()*900000+100000)}
 
-function verifyNode(){
+function node(){
+ let s=['syncing nodes','checking ledger','quantum lock','connected'],i=0
  let n=document.getElementById('node')
- let s=['syncing nodes','checking ledger','quantum lock','connected']
- let i=0
- let t=setInterval(()=>{n.innerText='NODE: '+s[i];i++;if(i>=s.length)clearInterval(t)},700)
+ let t=setInterval(()=>{n.innerText='NODE: '+s[i];i++;if(i>=s.length)clearInterval(t)},600)
 }
-verifyNode()
+node()
 
 function register(){
- let d=db(),e=email.value,p=pass.value,pi=pin.value
- if(!e||!p||pi.length!=4)return alert('email password and 4 digit pin required')
+ let d=db(),e=email.value.trim(),p=pass.value,pi=pin.value
+ if(!e||!p||pi.length!=4)return alert('email, password and 4 digit pin required')
  if(d.u[e])return alert('exists')
  d.u[e]={pass:p,pin:pi,acc:id(),balance:8000,tx:[]}
  save(d);alert('account ready')
 }
 
 function login(){
- let d=db(),e=email.value,p=pass.value,pi=pin.value
+ let d=db(),e=email.value.trim(),p=pass.value,pi=pin.value
  let u=d.u[e]
  if(!u||u.pass!=p||u.pin!=pi)return alert('access denied')
  localStorage.setItem('me',e);load()
@@ -84,13 +84,14 @@ function login(){
 
 function load(){
  let me=localStorage.getItem('me');if(!me)return
- loginBox.classList.add('hidden');app.classList.remove('hidden')
+ document.getElementById('login').classList.add('hidden')
+ document.getElementById('app').classList.remove('hidden')
  render()
 }
 
 function render(){
  let d=db(),me=localStorage.getItem('me'),u=d.u[me]
- welcome.innerText='USER: '+me
+ who.innerText='USER: '+me
  acc.innerText=u.acc
  bal.innerText=u.balance
  history.innerHTML=''
