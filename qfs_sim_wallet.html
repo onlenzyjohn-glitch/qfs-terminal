@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>QFS Quantum Terminal</title>
+<style>
+body{background:#010205;color:#00ffd9;font-family:monospace;margin:0}
+.container{max-width:540px;margin:10px auto}
+.term{background:#03060c;border:1px solid #00ffd9;border-radius:14px;padding:12px;margin:6px;box-shadow:0 0 10px #003d36}
+input,button{width:100%;padding:10px;margin:6px 0;border-radius:10px;border:1px solid #00ffd9;background:#000;color:#00ffd9}
+button{background:#00221f}
+.hidden{display:none}
+.row{display:flex;justify-content:space-between}
+.log{font-size:12px}
+.glow{text-shadow:0 0 6px #00ffd9}
+</style>
+</head>
+<body>
+<div class="container term">
+<div class="glow">QUANTUM FINANCIAL TERMINAL</div>
+<div id="node">NODE: awaiting verification...</div>
+
+<div id="loginBox">
+<input id="email" placeholder="email" />
+<input id="pass" type="password" placeholder="password" />
+<input id="pin" type="password" placeholder="4 digit pin" />
+<button onclick="register()">CREATE ACCOUNT</button>
+<button onclick="login()">LOGIN</button>
+</div>
+
+<div id="app" class="hidden">
+<div class="row">
+ <div id="welcome"></div>
+ <div class="glow"><span id="bal"></span> QC</div>
+</div>
+<div>ACCOUNT: <span id="acc"></span></div>
+
+<div class="term">
+<input id="to" placeholder="target account" />
+<input id="amt" type="number" placeholder="amount" />
+<input id="code" placeholder="2FA 0000" />
+<button onclick="send()">TRANSFER</button>
+</div>
+
+<div class="term">
+LEDGER STREAM
+<div id="history"></div>
+</div>
+
+<button onclick="logout()">EXIT</button>
+</div>
+</div>
+
+<audio id="beep" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAA"></audio>
+
+<script>
+function hash(){return 'H'+Math.random().toString(36).substr(2,10).toUpperCase()}
+function db(){return JSON.parse(localStorage.getItem('qterm')||'{"u":{}}')}
+function save(d){localStorage.setItem('qterm',JSON.stringify(d))}
+function id(){return 'Q'+Math.floor(Math.random()*900000+100000)}
+
+function verifyNode(){
+ let n=document.getElementById('node')
+ let s=['syncing nodes','checking ledger','quantum lock','connected']
+ let i=0
+ let t=setInterval(()=>{n.innerText='NODE: '+s[i];i++;if(i>=s.length)clearInterval(t)},700)
+}
+verifyNode()
+
+function register(){
+ let d=db(),e=email.value,p=pass.value,pi=pin.value
+ if(!e||!p||pi.length!=4)return alert('email password and 4 digit pin required')
+ if(d.u[e])return alert('exists')
+ d.u[e]={pass:p,pin:pi,acc:id(),balance:8000,tx:[]}
+ save(d);alert('account ready')
+}
+
+function login(){
+ let d=db(),e=email.value,p=pass.value,pi=pin.value
+ let u=d.u[e]
+ if(!u||u.pass!=p||u.pin!=pi)return alert('access denied')
+ localStorage.setItem('me',e);load()
+}
+
+function load(){
+ let me=localStorage.getItem('me');if(!me)return
+ loginBox.classList.add('hidden');app.classList.remove('hidden')
+ render()
+}
+
+function render(){
+ let d=db(),me=localStorage.getItem('me'),u=d.u[me]
+ welcome.innerText='USER: '+me
+ acc.innerText=u.acc
+ bal.innerText=u.balance
+ history.innerHTML=''
+ u.tx.slice().reverse().forEach(t=>{
+  history.innerHTML+=`<div class='log row'><span>${t.m}<br/><small>${t.h}</small></span><span>${t.a}</span></div>`
+ })
+}
+
+function find(a){let d=db();return Object.values(d.u).find(x=>x.acc==a)}
+
+function sound(){document.getElementById('beep').play().catch(()=>{})}
+
+function send(){
+ let d=db(),me=localStorage.getItem('me'),u=d.u[me]
+ let r=find(to.value),am=parseInt(amt.value)
+ if(code.value!='0000')return alert('2fa error')
+ if(!r)return alert('target not found')
+ if(am<=0||u.balance<am)return alert('invalid amount')
+
+ let h=hash()
+ u.balance-=am;r.balance+=am
+ u.tx.push({m:'OUT '+to.value,a:'-'+am,h:h})
+ r.tx.push({m:'IN '+u.acc,a:'+'+am,h:h})
+ save(d);sound();render()
+}
+
+function logout(){localStorage.removeItem('me');location.reload()}
+load()
+</script>
+</body>
+</html>
